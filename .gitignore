@@ -1,0 +1,30 @@
+# ambiente
+.env
+.venv
+.conda/
+kaggle.json
+
+# dados (baixe pelo Kaggle, veja o README)
+*.csv
+*.db
+data/**/*
+!data/.gitkeep
+
+# modelos e experimentos (ficam no MLflow)
+*.pkl
+mlartifacts/
+mlruns/
+
+# python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# editor / sistema
+.DS_Store
+.vscode/
+.claude/
+*.session.sql
+
+# banner do projeto original (não redistribuído)
+img/

@@ -6,9 +6,10 @@ from flask import Flask, request
 import mlflow
 
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000"))
-versions = mlflow.search_model_versions(filter_string="name='model_fiel'")
-last_version = max([int(i.version) for i in versions])
-model = mlflow.sklearn.load_model(f"models:///model_fiel/{last_version}")
+# mesma versão da escoragem em lote: a marcada como "champion" no MLflow
+client = mlflow.MlflowClient()
+version = client.get_model_version_by_alias("model_fiel", "champion").version
+model = mlflow.sklearn.load_model(f"models:/model_fiel/{version}")
 app = Flask(__name__)
 
 # mesmas categóricas do train.py; o resto é convertido para float como no treino

@@ -1,6 +1,8 @@
 # %%
 # IMPORTS
 
+import os
+
 import matplotlib.pyplot as plt
 import mlflow
 import pandas as pd
@@ -11,8 +13,8 @@ from sklearn import ensemble, metrics, model_selection, pipeline
 # %%
 # CONFIGURAÇÃO
 
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
-mlflow.set_experiment(experiment_id=1)
+mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000"))
+mlflow.set_experiment(experiment_name="exp_predict_fiel")
 
 con = sqlalchemy.create_engine("sqlite:///../../data/analytics/database.db")
 
@@ -239,8 +241,8 @@ with mlflow.start_run() as r:
     plt.plot(roc_oot[0], roc_oot[1])
     plt.legend(
         [
-            f"Treino: {auc_train}",
-            f"Teste: {auc_test}",
+            f"Treino: {auc_train:.4f}",
+            f"Teste: {auc_test:.4f}",
             f"OOT: {auc_oot:.4f}",
         ]
     )

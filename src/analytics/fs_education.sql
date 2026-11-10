@@ -3,7 +3,7 @@ with tb_usuario_curso AS
 (
         SELECT idUsuario,
         descSlugCurso,
-        COUNT(descSlugCursoEpisodio) AS qtdeEps
+        COUNT(DISTINCT descSlugCursoEpisodio) AS qtdeEps
         
         FROM cursos_episodios_completos
         WHERE dtCriacao < '{date}' 

@@ -25,7 +25,6 @@ def date_range(start,stop, monthly=False):
         return [i for i in dates if i.endswith("01")]
     return dates
 
-date_range("2024-01-01", "2025-01-01", monthly=True)
 # %%
 
 def exec_query(table,db_origin, db_target, dt_start, dt_stop, monthly, mode='append'):
@@ -47,13 +46,13 @@ def exec_query(table,db_origin, db_target, dt_start, dt_stop, monthly, mode='app
             with engine_analytical.connect() as con:
                 try:
                     query_delete = f"DELETE FROM {table} WHERE dtRef = date('{i}', '-1 day')"
-                    print(query_delete)
+                    tqdm.write(query_delete)
                     con.execute(sqlalchemy.text(query_delete))
                     con.commit()
                 except Exception as err:
-                    print(err)
+                    tqdm.write(str(err))
 
-        print(i)
+        tqdm.write(i)
         query_format = query.format(date=i)
         df = pd.read_sql(query_format, engine_app)
         df.to_sql(table, engine_analytical, index=False, if_exists="append")

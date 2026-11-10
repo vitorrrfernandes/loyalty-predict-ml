@@ -1,5 +1,7 @@
 # %%
 
+import os
+
 import pandas as pd
 import mlflow
 import sqlalchemy
@@ -7,7 +9,7 @@ import sqlalchemy
 con = sqlalchemy.create_engine("sqlite:///../../data/analytics/database.db")
 # %% 
 # 127.0.0.1 e nao localhost: no Mac, localhost:5000 cai no AirPlay (erro 403)
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000"))
 
 # %%
 versions = mlflow.search_model_versions(filter_string="name='model_fiel'")

@@ -7,6 +7,8 @@ kaggle.json
 # dados (baixe pelo Kaggle, veja o README)
 *.csv
 *.db
+*.parquet
+*.zip
 data/**/*
 !data/.gitkeep
 
@@ -19,6 +21,7 @@ mlruns/
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
+.ruff_cache/
 
 # editor / sistema
 .DS_Store

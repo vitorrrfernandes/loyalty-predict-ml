@@ -1,9 +1,11 @@
 
+import os
+
 import pandas as pd
 from flask import Flask, request
 import mlflow
 
-mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000"))
 versions = mlflow.search_model_versions(filter_string="name='model_fiel'")
 last_version = max([int(i.version) for i in versions])
 model = mlflow.sklearn.load_model(f"models:///model_fiel/{last_version}")

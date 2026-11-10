@@ -28,7 +28,7 @@ def date_range(start,stop, monthly=False):
 date_range("2024-01-01", "2025-01-01", monthly=True)
 # %%
 
-def exec_query(table,db_origin, db_target, dt_start, dt_stop, monthly):
+def exec_query(table,db_origin, db_target, dt_start, dt_stop, monthly, mode='append'):
     engine_app = sqlalchemy.create_engine(f"sqlite:///../../data/{db_origin}/database.db")
     engine_analytical = sqlalchemy.create_engine(f"sqlite:///../../data/{db_target}/database.db")
     query = import_query(f"{table}.sql")
@@ -36,16 +36,22 @@ def exec_query(table,db_origin, db_target, dt_start, dt_stop, monthly):
 
     dates = date_range(dt_start, dt_stop,monthly)
 
+    if mode == 'replace':
+        with engine_analytical.connect() as con:
+            con.execute(sqlalchemy.text(f"DROP TABLE IF EXISTS {table}"))
+            con.commit()
+
     for i in tqdm(dates):
 
-        with engine_analytical.connect() as con:
-            try:
-                query_delete = f"DELETE FROM {table} WHERE dtRef = date('{i}', '-1 day')"
-                print(query_delete)
-                con.execute(sqlalchemy.text(query_delete))
-                con.commit()
-            except Exception as err:
-                print(err)
+        if mode == 'append':
+            with engine_analytical.connect() as con:
+                try:
+                    query_delete = f"DELETE FROM {table} WHERE dtRef = date('{i}', '-1 day')"
+                    print(query_delete)
+                    con.execute(sqlalchemy.text(query_delete))
+                    con.commit()
+                except Exception as err:
+                    print(err)
 
         print(i)
         query_format = query.format(date=i)
@@ -69,9 +75,11 @@ def main():
 
     parser.add_argument("--monthly", action='store_true')
 
+    parser.add_argument("--mode", choices=['append','replace'], default='append')
+
     args = parser.parse_args()
 
-    exec_query(args.table, args.db_origin, args.db_target, args.start, args.stop, args.monthly)
+    exec_query(args.table, args.db_origin, args.db_target, args.start, args.stop, args.monthly, args.mode)
 
 if __name__ == "__main__":
     main()

@@ -66,3 +66,22 @@ plt.vlines(x=10, ymin=0, ymax=3000, colors='black')
 plt.grid()
 
 # %%
+# clusters do KMeans com as mesmas linhas de corte, para comparar com a regra do SQL
+
+plt.figure()
+sns.scatterplot(
+    data=df,
+    x="freq",
+    y="qtdePontos",
+    hue="cluster_calc",
+    palette="deep"
+)
+
+plt.hlines(y=1500, xmin=0, xmax=25, colors='black')
+plt.hlines(y=750, xmin=0, xmax=25, colors='black')
+
+plt.vlines(x=4, ymin=0, ymax=750, colors='black')
+plt.vlines(x=10, ymin=0, ymax=3000, colors='black')
+plt.grid()
+
+# %%

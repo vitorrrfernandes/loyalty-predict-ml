@@ -204,6 +204,17 @@ with mlflow.start_run() as r:
     print("Acurácia Oot:", acc_oot)
     print("AUC OOT:", auc_oot)
 
+    # ASSESS - Baseline
+    # chutar "nao fiel" para todos e dar a mesma probabilidade (taxa do treino) para todos
+    y_pred_baseline = pd.Series([0] * y_test.shape[0])
+    y_proba_baseline = pd.Series([y_train.mean()] * y_test.shape[0])
+
+    acc_baseline = metrics.accuracy_score(y_test, y_pred_baseline)
+    auc_baseline = metrics.roc_auc_score(y_test, y_proba_baseline)
+
+    print("Acurácia Baseline:", acc_baseline)
+    print("AUC Baseline:", auc_baseline)
+
     mlflow.log_metrics(
         {
             "acc_train": acc_train,
@@ -212,6 +223,8 @@ with mlflow.start_run() as r:
             "auc_test": auc_test,
             "acc_oot": acc_oot,
             "auc_oot": auc_oot,
+            "acc_baseline": acc_baseline,
+            "auc_baseline": auc_baseline,
         }
     )
 

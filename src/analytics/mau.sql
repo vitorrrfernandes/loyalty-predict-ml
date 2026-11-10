@@ -9,7 +9,8 @@ SELECT DISTINCT dtDia AS dtRef
 FROM tb_daily  
 )
 
-SELECT t1.dtRef, count( distinct IdCliente) AS mau
+SELECT t1.dtRef, count( distinct IdCliente) AS mau,
+count(distinct t2.dtDia) AS qtdeDias
 FROM tb_distinct_day AS t1
 LEFT JOIN tb_daily AS t2
 ON t2.dtDia <= t1.dtRef

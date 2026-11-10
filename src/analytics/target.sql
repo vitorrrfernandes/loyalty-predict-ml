@@ -1,20 +1,20 @@
-DROP TABLE IF EXISTS abt_fiel;
-
-CREATE TABLE IF NOT EXISTS abt_fiel AS
+-- Cohort completo da ABT: todas as datas de cada cliente fora do Zumbi, com o alvo em D+28.
+-- A amostra de até 2 datas por cliente é feita no abt.py (pandas, random_state=42),
+-- para a ABT ser reprodutível.
 
 WITH tb_join AS (
   SELECT t1.dtRef,
        t1.IdCliente,
        t1.descLifeCycle AS descLifeCycleAtual,
        t2.descLifeCycle AS descLifeCycleD28,
-       CASE WHEN t2.descLifeCycle = '02-FIEL' THEN 1 ELSE 0 END AS flFiel,
-       ROW_NUMBER() OVER (PARTITION BY t1.IdCliente ORDER BY random()) AS randomCol
+       CASE WHEN t2.descLifeCycle = '02-FIEL' THEN 1 ELSE 0 END AS flFiel
 FROM life_cycle AS t1
 LEFT JOIN life_cycle AS t2
   ON t1.IdCliente = t2.IdCliente
  AND date(t1.dtRef, '+28 day') = date(t2.dtRef)
 
- WHERE (t1.dtRef >= '2024-03-01' AND t1.dtRef <='2025-08-01' OR t1.dtRef='2025-09-01')
+ -- começa em 2024-03-29: antes disso não existe o life_cycle de D-28 (ele começa em 2024-02-29)
+ WHERE (t1.dtRef >= '2024-03-29' AND t1.dtRef <='2025-08-01' OR t1.dtRef='2025-09-01')
  AND t1.descLifeCycle <> '05-Zumbi'
 ),
 
@@ -25,8 +25,6 @@ tb_cohort AS (
        t1.flFiel
 
 FROM tb_join AS t1
-WHERE randomCol <= 2
-ORDER BY IdCliente, dtRef
 
 )
 
@@ -139,3 +137,6 @@ on t1.IdCliente = t4.IdCliente
 AND t1.dtRef = t4.dtRef
 
 WHERE t3.dtRef IS NOT NULL
+
+-- ordem fixa para a amostragem do abt.py dar sempre o mesmo resultado
+ORDER BY t1.IdCliente, t1.dtRef

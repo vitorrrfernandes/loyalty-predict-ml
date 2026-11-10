@@ -4,6 +4,52 @@
 - **Referência:** `TeoMeWhy/loyalty-predict`, commit `346e3bd` ("feat: api com predicao para fiel"), clonada em `/tmp/loyalty-predict-ref` (sem alterações)
 - **Etapa atual:** o campo veio como `[PREENCHA]`. Pelo código, você está em **"App de inferência"**: a API tem `/health_check` pronto e `/predict` ainda é um esboço.
 - **Como foi feito:** leitura de todos os `.sql`/`.py` dos dois projetos, inspeção dos bancos locais em modo somente-leitura e execução do Makefile, do `train.py` e da API sobre uma **cópia** dos dados e do MLflow (fora do projeto). Nenhum arquivo do seu projeto foi alterado além deste relatório: o `git status` está idêntico ao do início e os `.db` mantêm as datas originais.
+- **Atualização (2026-11-10):** cada item recebeu o status e o commit da correção (branch `paridade-referencia`). Nada do texto original foi apagado; ver "Status das correções" abaixo.
+
+---
+
+## Status das correções
+
+*Atualizado em 2026-11-10. O texto original da auditoria foi mantido; cada item ganhou a marcação de status e o commit em que foi resolvido, no branch `paridade-referencia`.*
+
+Legenda: ✅ resolvido · 🔸 parcial · ⏳ pendente (Lote 2, retreino) · ℹ️ sem ação prevista
+
+| Item | Status | Commit / observação |
+|---|---|---|
+| I1. Buraco de datas na FS | ✅ resolvido | `3a24c86`: o pipeline retoma do último `dtRef`. Dados preenchidos em 2026-11-10 |
+| I2. Mesmo cliente em treino e teste | ⏳ pendente | Lote 2 |
+| I3. `descLifeCycleD28` nulo no início da ABT | ⏳ pendente | Lote 2 (opção a) |
+| I4. `COUNT` sem `DISTINCT` no `fs_education` | ✅ resolvido | `3a24c86`; `fs_education` recalculado. Chega ao modelo no retreino |
+| I5. Cliente de teste da API | ✅ resolvido | `3a24c86` |
+| M1. ABT com `random()` | ⏳ pendente | Lote 2 |
+| M2. `features.remove` no `train.py` | ⏳ pendente | Lote 2 |
+| M3. Experimento por nome | ✅ resolvido | `3a24c86` |
+| M4. `MLFLOW_TRACKING_URI` | ✅ resolvido | `3a24c86` |
+| M5. Modelo registrado e métricas do README | ⏳ pendente | Lote 2 |
+| M6. README, seção "Como executar" | ⏳ pendente | Lote 2 |
+| M7. Sobra de teste e prints no `exec_query.py` | ✅ resolvido | `3a24c86` |
+| M8. AUC na legenda da curva ROC | ✅ resolvido | `3a24c86` (treino e teste) |
+| M9. Baseline | ✅ resolvido | `32ac8b3`, logado no MLflow |
+| M10. `unzip=True` no `get_data.py` | ✅ resolvido | `3a24c86` |
+| M11. Arquivos soltos | ✅ resolvido | `3a24c86`; os arquivos ignorados pelo git foram para a Lixeira |
+| M12. `.gitignore` | ✅ resolvido | `3a24c86` |
+| M13. Rótulos e KMeans no `frequencia_valor` | 🔸 parcial | Gráfico do KMeans em `32ac8b3`; rótulos e `20s-POTENCIAL` no `.sql` ainda pendentes |
+| M14. Alvos do Makefile | ⏳ pendente | Lote 2 |
+| M15. `score_fiel` em append | ⏳ pendente | Lote 2 |
+| M16. Ruídos menores | ℹ️ sem ação | Só registro |
+
+**Placar:** 11 resolvidos, 1 parcial, 8 pendentes e 1 sem ação (21 itens: 5 🟡 e 16 🔵).
+
+**Também entrou, além da lista original:**
+- `32ac8b3`, paridade com a referência: `/predict` e `/predict_many` na API (etapa 8 do curso), coluna `qtdeDias` no `mau.sql` e gráfico do KMeans.
+- `13c5a35`, documentação: regras do ciclo de vida no topo do `life_cycle.sql`, `LICENSE` GPL-3.0 (a mesma do projeto original) e créditos no README.
+
+**Ações nos dados (fora do git, em 2026-11-10):**
+- Backup em `data/analytics/database.backup-2026-11-10.db` antes de qualquer mudança.
+- Buraco de datas preenchido em `life_cycle`, `fs_transacional`, `fs_education` e `fs_life_cycle` (faltavam os `dtRef` de 2026-10-05 a 2026-10-28 e de 2026-10-30 a 2026-11-03).
+- `fs_education` recalculado em todo o período com dados de cursos (2025-02-04 a 2026-11-05; não há dados antes disso), já com o `DISTINCT`.
+- `fs_all` e `score_fiel` regenerados: o `descLifeCycleD28` nulo caiu de 100% para 0,2%.
+- O modelo **não** foi retreinado; o `model_fiel` v1 continua em produção.
 
 ---
 
@@ -19,15 +65,15 @@
 - Lint: `pyflakes` sem nenhum aviso; `py_compile` OK nos 9 arquivos.
 
 **Falta (etapas do curso)**
-- `/predict` e `/predict_many` da API, e a integração com o ecossistema TMW (seção 3).
+- `/predict` e `/predict_many` da API, e a integração com o ecossistema TMW (seção 3). *(Atualização: API ✅ em `32ac8b3`; a integração segue pendente.)*
 
 **Está errado ou merece correção**
 - 🔴 **Nenhum problema crítico.** Nada quebra a execução, não há vazamento de informação futura nas features e o alvo está correto.
-- 🟡 **5 problemas importantes.** Os mais relevantes:
+- 🟡 **5 problemas importantes.** Os mais relevantes: *(Atualização: I1, I4 e I5 resolvidos; I2 e I3 pendentes.)*
   - um **buraco de datas** na FS que zera `descLifeCycleD28` na escoragem atual;
   - **o mesmo cliente aparece em treino e teste**, o que deixa a AUC de teste otimista;
   - **930 linhas da ABT** com `descLifeCycleD28` nulo por artefato do backfill.
-- 🔵 **16 melhorias** de reprodutibilidade, organização e documentação.
+- 🔵 **16 melhorias** de reprodutibilidade, organização e documentação. *(Atualização: 8 resolvidas, 1 parcial, 6 pendentes e 1 sem ação.)*
 
 ---
 
@@ -44,7 +90,8 @@
 
 ### 🟡 Importante
 
-#### I1. Buraco de datas na Feature Store zera `descLifeCycleD28` na escoragem atual
+#### I1. Buraco de datas na Feature Store zera `descLifeCycleD28` na escoragem atual — ✅ resolvido em `3a24c86`
+- **Status:** ✅ resolvido. Código em `3a24c86`: o `pipeline_analytics.py` retoma do dia seguinte ao último `dtRef` salvo e sempre recalcula o dia atual. Dados corrigidos em 2026-11-10, fora do git: buraco preenchido nas quatro FS e `fs_all`/`score_fiel` regenerados; o `descLifeCycleD28` nulo caiu de 100% para 0,2%.
 - **Arquivos:** `src/analytics/pipeline_analytics.py:6-55` (todas as etapas usam `dt_start = dt_stop = now`) e `src/analytics/fs_life_cycle.sql:10-15` (busca o `life_cycle` de `{date} − 29 dias`).
 - **Problema:** o `life_cycle` salvo não tem as datas **2026-10-05 a 2026-10-28** nem **2026-10-30 a 2026-11-03**. O `fs_education` tem os mesmos buracos. Como o pipeline só calcula "hoje", qualquer dia sem execução vira buraco.
 - **Consequência:** em `fs_all` e `score_fiel` de 2026-11-05, o `descLifeCycleD28` está **nulo para 100% dos 3.796 clientes** e é imputado como `Nao-Usuario`. O mesmo vai acontecer em qualquer execução até 28 dias depois do buraco.
@@ -61,7 +108,8 @@
      ```
   2. Definitivo: no `pipeline_analytics.py`, calcular `dt_start` como (maior `dtRef` da tabela + 2 dias) até `now`, para o pipeline se recuperar sozinho quando pular dias. O modo `append` já é idempotente porque apaga o `dtRef` antes de inserir.
 
-#### I2. O mesmo cliente aparece no treino e no teste (validação otimista)
+#### I2. O mesmo cliente aparece no treino e no teste (validação otimista) — ⏳ pendente (Lote 2)
+- **Status:** ⏳ pendente, planejado para o Lote 2 (retreino).
 - **Arquivo:** `src/analytics/train.py:42-48` (`train_test_split` por linha) e `:143-151` (`GridSearchCV(cv=3)` por linha).
 - **Problema:** a ABT tem até 2 linhas por cliente (2.603 dos 3.042 clientes aparecem 2 vezes). O split aleatório por linha coloca **82,7% das linhas de teste com o mesmo cliente presente no treino**. Na OOT, isso cai para 2,0%. O CV do GridSearch tem o mesmo problema, o que favorece hiperparâmetros que "decoram" o cliente.
 - **Consequência:** a AUC de teste (0,89) está inflada. A queda para a OOT (0,82) **não é só "mudança de comportamento"**, como diz o `README.md:24`: parte dela é essa sobreposição. A OOT é a métrica honesta.
@@ -82,7 +130,8 @@
   model_pipeline.fit(X_train, y_train, Algoritmo__groups=groups.iloc[idx_train])
   ```
 
-#### I3. 930 linhas da ABT (16,5%) com `descLifeCycleD28` nulo por artefato do backfill
+#### I3. 930 linhas da ABT (16,5%) com `descLifeCycleD28` nulo por artefato do backfill — ⏳ pendente (Lote 2)
+- **Status:** ⏳ pendente, planejado para o Lote 2 com a opção (a): cohort a partir de 2024-03-29.
 - **Arquivos:** `src/analytics/target.sql:17` (cohort a partir de `2024-03-01`) e `README.md:89-92` (backfill de todas as tabelas a partir de `2024-03-01`).
 - **Problema:** o `life_cycle` começa em `dtRef = 2024-02-29`, mas as transações começam em **2024-01-27**. Para os `dtRef` de 2024-03-01 a 2024-03-28, o snapshot de D−28 não existe. Por isso o `descLifeCycleD28` está nulo em **99%** dessas 930 linhas, contra 56,5% no resto do treino. Essas linhas viram `Nao-Usuario` ("cliente novo") mesmo quando o cliente já existia. Os `pct*` (histórico de ciclos) também ficam com histórico curto nesse período.
 - **Referência:** não documenta a data de início do backfill, então não dá para confirmar se tem o mesmo problema.
@@ -91,14 +140,16 @@
   - **(b) Mais completa:** rodar o backfill do `life_cycle` desde `2024-02-01`, recalcular `fs_life_cycle` (no mínimo de 2024-03-01 a 2024-03-29; o ideal é tudo) e recriar a ABT.
   - Nos dois casos é preciso **retreinar**.
 
-#### I4. `fs_education` conta episódios duplicados (`COUNT` sem `DISTINCT`)
+#### I4. `fs_education` conta episódios duplicados (`COUNT` sem `DISTINCT`) — ✅ resolvido em `3a24c86`
+- **Status:** ✅ resolvido. SQL em `3a24c86`; `fs_education` recalculado em 2026-11-10 para todo o período com dados (2025-02-04 a 2026-11-05). Chega ao modelo no próximo retreino (Lote 2).
 - **Arquivo:** `src/analytics/fs_education.sql:6`, `COUNT(descSlugCursoEpisodio) AS qtdeEps`.
 - **Problema:** `cursos_episodios_completos` tem registros repetidos do mesmo episódio para o mesmo usuário. Com os dados de hoje, 15 dos 5.484 pares usuário-curso ficam inflados e 8 chegam a `pctCursoCompleto > 1`. Esses pares não entram nem em `qtdeCursosCompletos` (`= 1`) nem em `qtdeCursosIncompletos` (`< 1`), então hoje há 1.516 cursos completos onde deveria haver 1.520.
 - **Impacto:** pequeno, mas é um erro de agregação.
 - **Referência:** **tem o mesmo bug** (`fs_education.sql:4`).
 - **Correção:** `COUNT(DISTINCT descSlugCursoEpisodio)`. Depois é preciso recalcular `fs_education` em todo o período, recriar a ABT e retreinar. Dá para juntar com o próximo retreino.
 
-#### I5. Cliente de teste da API com bug
+#### I5. Cliente de teste da API com bug — ✅ resolvido em `3a24c86`
+- **Status:** ✅ resolvido em `3a24c86`: `src/api/test_api.py` substitui o `import requests.py` e testa os dois endpoints com linhas do `fs_all`; `requests==2.34.2` está no `requirements.txt`.
 - **Arquivo:** `src/api/import requests.py:4-5`.
 - **Problemas:**
   - `resp.json` sem parênteses devolve o método, não o JSON.
@@ -114,24 +165,24 @@
 
 ### 🔵 Melhoria
 
-| # | Arquivo:linha | Problema | Sugestão |
-|---|---|---|---|
-| M1 | `src/analytics/target.sql:11` | `ORDER BY random()` não aceita semente no SQLite, então cada recriação da ABT sorteia linhas diferentes (recriei na cópia e saíram 517 datas em vez de 519). O treino não é reprodutível a partir do zero. A referência tem o mesmo problema. | Fazer a amostragem de 2 datas por cliente em pandas com `random_state`, ou nunca recriar a ABT sem versioná-la. |
-| M2 | `src/analytics/train.py:76-78` | `features.remove(i)` altera a lista dentro da célula da bivariada. Se você rodar a célula de novo, `to_remove` vira `[]`, as features deixam de ser removidas e o `fill_0` muda. A execução depende da ordem das células. | Calcular `to_remove` sem mutar listas: `features_ok = [f for f in features if f not in to_remove]`. |
-| M3 | `src/analytics/train.py:15` | `set_experiment(experiment_id=1)` quebra num MLflow novo, onde o ID 1 não existe. | `mlflow.set_experiment(experiment_name="exp_predict_fiel")`. |
-| M4 | `train.py:14`, `predict.py:10`, `predict_fiel.py:9`, `api_fiel.py:5` | A URI do MLflow está fixa no código e inconsistente: `127.0.0.1` em uns, `localhost` em outros. | Ler de `os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")` em todos. |
-| M5 | MLflow / `README.md:17-19` | O modelo registrado (`model_fiel` v1, run `69f947f1`, de 27/10) é um RandomForest(250, leaf=50) **sem GridSearch**, ou seja, não é o resultado do `train.py` atual. O README mostra OOT AUC 0,813, mas a v1 tem 0,8178 e o `train.py` atual gera 0,8184. | Depois de I2 e I3, retreinar, registrar a nova versão e atualizar a tabela do README. |
-| M6 | `README.md:43,58,83-101` | O README está desatualizado: cita `predict.py` como escoragem (o Makefile usa `predict_fiel.py`), sugere `.venv` (o Makefile usa `.conda`) e não menciona `Makefile`, `pipeline_analytics.py`, `fs_all` nem a API. | Atualizar a seção "Como executar" para `make setup / make all` e listar `predict_fiel.py` e a API. |
-| M7 | `src/analytics/exec_query.py:28` | `date_range("2024-01-01", "2025-01-01", monthly=True)` roda no import (sobra de teste). Os `print` nas linhas 50 e 56 poluem a barra do `tqdm`. | Remover a linha 28; trocar os prints por `tqdm.write` ou removê-los. |
-| M8 | `src/analytics/train.py:229-230` | A legenda da curva ROC mostra a AUC sem formatação (`0.9016453720180454`). | `f"Treino: {auc_train:.4f}"`, como já está feito na OOT. |
-| M9 | `src/analytics/train.py` | Não há baseline. A referência tem o "fodase" (`train.py:197-203`); com 8,7% de alvo, acurácia sozinha engana. | Logar a AUC e a acurácia de um baseline constante para comparação. |
-| M10 | `src/engineering/get_data.py:21` | No `kaggle==2.2.5`, se o servidor compactar o arquivo, o download vira `database.db.zip` e **não é extraído** (`unzip=False` é o padrão). Hoje funcionou, mas é frágil. | `api.dataset_download_file(d, 'database.db', path=path, unzip=True, force=True)`. |
-| M11 | Raiz e `src/` | Arquivos soltos: `database.db` na raiz (73 MB, cópia antiga do loyalty-system), `src/analytics/model_fiel.pkl`, `src/analytics/s.sql`, `src/engineering/query.sql`, `data/loyalty-system/query.sql` e `*.session.sql` vazios. Também `src/kaggle.json`, que é redundante: o `src/.env` já tem `KAGGLE_USERNAME` e `KAGGLE_KEY`, e a lib do Kaggle não lê `kaggle.json` de `src/`. | Apagar ou mover para fora do repo. Menos cópias de credencial é melhor. |
-| M12 | `.gitignore` | Não cobre `*.parquet` (você pediu para checar) nem `*.zip` (ver M10). | Adicionar `*.parquet`, `*.zip` e `.ruff_cache/`. |
-| M13 | `src/analytics/frequencia_valor.sql:15-21` / `.py:53-59` | Os rótulos divergem do `life_cycle.sql` (`12-HYPERS`, `21-ESFORCADO`, `01-PREGUICOSO`) e há um erro de digitação: **`20s-POTENCIAL`**. O `.py` calcula o KMeans mas plota só os clusters da regra SQL; a referência plota os dois. O arquivo é só exploratório. | Usar os mesmos rótulos do `life_cycle.sql` e adicionar o gráfico com `hue="cluster_calc"`. |
-| M14 | `Makefile` | Não há alvos para ABT, treino nem API (a referência também não tem). Rodar `etl` sem `collect` gera `dtRef` além do fim dos dados: as transações vão até 2026-11-06 e o ETL de hoje gerou `dtRef` 2026-11-09, o que infla a recência de todo mundo. | Adicionar `abt` (`sqlite3 … < target.sql`), `train` e `api`, e fazer `etl` depender de `collect`. |
-| M15 | `src/analytics/predict_fiel.py:28` | `score_fiel` é sobrescrito (`replace`) a cada execução, então o histórico de scores se perde. A referência faz o mesmo. | Para monitorar, gravar em modo append, apagando antes o `dtRef` do dia. |
-| M16 | Vários | Ruídos menores, iguais aos da referência: (a) `fs_transacional.sql:129-133`: 1.082 transações têm mais de um produto em `transacao_produto` e inflam levemente o denominador dos shares; (b) `fs_education.sql:17`: o total de episódios vem do catálogo atual (sem data), um pequeno "olhar o futuro" que é inerente ao dado; (c) `02-Reconquistado`/`02-Reborn` em D+28 contam como `flFiel = 0`, embora também sejam ganho de engajamento. Isso é escolha de desenho; vale discutir. | Apenas registrar ou discutir; não precisa de ação agora. |
+| # | Arquivo:linha | Problema | Sugestão | Status |
+|---|---|---|---|---|
+| M1 | `src/analytics/target.sql:11` | `ORDER BY random()` não aceita semente no SQLite, então cada recriação da ABT sorteia linhas diferentes (recriei na cópia e saíram 517 datas em vez de 519). O treino não é reprodutível a partir do zero. A referência tem o mesmo problema. | Fazer a amostragem de 2 datas por cliente em pandas com `random_state`, ou nunca recriar a ABT sem versioná-la. | ⏳ Lote 2 |
+| M2 | `src/analytics/train.py:76-78` | `features.remove(i)` altera a lista dentro da célula da bivariada. Se você rodar a célula de novo, `to_remove` vira `[]`, as features deixam de ser removidas e o `fill_0` muda. A execução depende da ordem das células. | Calcular `to_remove` sem mutar listas: `features_ok = [f for f in features if f not in to_remove]`. | ⏳ Lote 2 |
+| M3 | `src/analytics/train.py:15` | `set_experiment(experiment_id=1)` quebra num MLflow novo, onde o ID 1 não existe. | `mlflow.set_experiment(experiment_name="exp_predict_fiel")`. | ✅ `3a24c86` |
+| M4 | `train.py:14`, `predict.py:10`, `predict_fiel.py:9`, `api_fiel.py:5` | A URI do MLflow está fixa no código e inconsistente: `127.0.0.1` em uns, `localhost` em outros. | Ler de `os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")` em todos. | ✅ `3a24c86` |
+| M5 | MLflow / `README.md:17-19` | O modelo registrado (`model_fiel` v1, run `69f947f1`, de 27/10) é um RandomForest(250, leaf=50) **sem GridSearch**, ou seja, não é o resultado do `train.py` atual. O README mostra OOT AUC 0,813, mas a v1 tem 0,8178 e o `train.py` atual gera 0,8184. | Depois de I2 e I3, retreinar, registrar a nova versão e atualizar a tabela do README. | ⏳ Lote 2 |
+| M6 | `README.md:43,58,83-101` | O README está desatualizado: cita `predict.py` como escoragem (o Makefile usa `predict_fiel.py`), sugere `.venv` (o Makefile usa `.conda`) e não menciona `Makefile`, `pipeline_analytics.py`, `fs_all` nem a API. | Atualizar a seção "Como executar" para `make setup / make all` e listar `predict_fiel.py` e a API. | ⏳ Lote 2 |
+| M7 | `src/analytics/exec_query.py:28` | `date_range("2024-01-01", "2025-01-01", monthly=True)` roda no import (sobra de teste). Os `print` nas linhas 50 e 56 poluem a barra do `tqdm`. | Remover a linha 28; trocar os prints por `tqdm.write` ou removê-los. | ✅ `3a24c86` |
+| M8 | `src/analytics/train.py:229-230` | A legenda da curva ROC mostra a AUC sem formatação (`0.9016453720180454`). | `f"Treino: {auc_train:.4f}"`, como já está feito na OOT. | ✅ `3a24c86` (treino e teste) |
+| M9 | `src/analytics/train.py` | Não há baseline. A referência tem o "fodase" (`train.py:197-203`); com 8,7% de alvo, acurácia sozinha engana. | Logar a AUC e a acurácia de um baseline constante para comparação. | ✅ `32ac8b3` (logado no MLflow) |
+| M10 | `src/engineering/get_data.py:21` | No `kaggle==2.2.5`, se o servidor compactar o arquivo, o download vira `database.db.zip` e **não é extraído** (`unzip=False` é o padrão). Hoje funcionou, mas é frágil. | `api.dataset_download_file(d, 'database.db', path=path, unzip=True, force=True)`. | ✅ `3a24c86` |
+| M11 | Raiz e `src/` | Arquivos soltos: `database.db` na raiz (73 MB, cópia antiga do loyalty-system), `src/analytics/model_fiel.pkl`, `src/analytics/s.sql`, `src/engineering/query.sql`, `data/loyalty-system/query.sql` e `*.session.sql` vazios. Também `src/kaggle.json`, que é redundante: o `src/.env` já tem `KAGGLE_USERNAME` e `KAGGLE_KEY`, e a lib do Kaggle não lê `kaggle.json` de `src/`. | Apagar ou mover para fora do repo. Menos cópias de credencial é melhor. | ✅ `3a24c86` (+ arquivos ignorados na Lixeira) |
+| M12 | `.gitignore` | Não cobre `*.parquet` (você pediu para checar) nem `*.zip` (ver M10). | Adicionar `*.parquet`, `*.zip` e `.ruff_cache/`. | ✅ `3a24c86` |
+| M13 | `src/analytics/frequencia_valor.sql:15-21` / `.py:53-59` | Os rótulos divergem do `life_cycle.sql` (`12-HYPERS`, `21-ESFORCADO`, `01-PREGUICOSO`) e há um erro de digitação: **`20s-POTENCIAL`**. O `.py` calcula o KMeans mas plota só os clusters da regra SQL; a referência plota os dois. O arquivo é só exploratório. | Usar os mesmos rótulos do `life_cycle.sql` e adicionar o gráfico com `hue="cluster_calc"`. | 🔸 parcial: KMeans em `32ac8b3`; rótulos do `.sql` pendentes |
+| M14 | `Makefile` | Não há alvos para ABT, treino nem API (a referência também não tem). Rodar `etl` sem `collect` gera `dtRef` além do fim dos dados: as transações vão até 2026-11-06 e o ETL de hoje gerou `dtRef` 2026-11-09, o que infla a recência de todo mundo. | Adicionar `abt` (`sqlite3 … < target.sql`), `train` e `api`, e fazer `etl` depender de `collect`. | ⏳ Lote 2 |
+| M15 | `src/analytics/predict_fiel.py:28` | `score_fiel` é sobrescrito (`replace`) a cada execução, então o histórico de scores se perde. A referência faz o mesmo. | Para monitorar, gravar em modo append, apagando antes o `dtRef` do dia. | ⏳ Lote 2 |
+| M16 | Vários | Ruídos menores, iguais aos da referência: (a) `fs_transacional.sql:129-133`: 1.082 transações têm mais de um produto em `transacao_produto` e inflam levemente o denominador dos shares; (b) `fs_education.sql:17`: o total de episódios vem do catálogo atual (sem data), um pequeno "olhar o futuro" que é inerente ao dado; (c) `02-Reconquistado`/`02-Reborn` em D+28 contam como `flFiel = 0`, embora também sejam ganho de engajamento. Isso é escolha de desenho; vale discutir. | Apenas registrar ou discutir; não precisa de ação agora. | ℹ️ sem ação |
 
 > **Não renomeie colunas agora** (por exemplo, `qtdeTransacoesVida` → `qtdeTransacaoVida`), mesmo que fiquem mais parecidas com a referência. O modelo registrado guarda `feature_names_in_` e quebraria. Se quiser padronizar, faça isso junto com um retreino.
 
@@ -145,13 +196,15 @@
 | 2 | Extração dos dados | ✅ `get_data.py` e `make collect` |
 | 3 | Entendimento dos dados | ✅ `dau.sql`, `mau.sql`, `frequencia_valor.*`, `report_ciclo_vida.sql` |
 | 4 | Definição das variáveis | ✅ `life_cycle.sql`, `target.sql` |
-| 5 | Feature Stores | ✅ `fs_*.sql`, `fs_all.sql`, `pipeline_analytics.py` (ver I1, I3, I4) |
-| 6 | Treinamento | ✅ `train.py` (ver I2) |
-| 7 | Registro no MLflow | ✅ `model_fiel` v1, mas desatualizado em relação ao `train.py` (M5) |
-| 8 | **App de inferência** | ⏳ **Em andamento.** Falta, em ordem: **(a)** lógica do `/predict` em `src/api/api_fiel.py:16-18` (hoje devolve `{}`); **(b)** endpoint `/predict_many` (hoje dá 404); **(c)** cliente de teste corrigido (I5). |
+| 5 | Feature Stores | ✅ `fs_*.sql`, `fs_all.sql`, `pipeline_analytics.py` (ver I1, I3, I4) **Atualização:** I1 e I4 resolvidos em `3a24c86`; I3 no Lote 2. |
+| 6 | Treinamento | ✅ `train.py` (ver I2) **Atualização:** baseline em `32ac8b3`; I2 no Lote 2. |
+| 7 | Registro no MLflow | ✅ `model_fiel` v1, mas desatualizado em relação ao `train.py` (M5) **Atualização:** nova versão prevista no Lote 2. |
+| 8 | **App de inferência** | ⏳ **Em andamento.** Falta, em ordem: **(a)** lógica do `/predict` em `src/api/api_fiel.py:16-18` (hoje devolve `{}`); **(b)** endpoint `/predict_many` (hoje dá 404); **(c)** cliente de teste corrigido (I5). **Atualização:** ✅ (a) e (b) em `32ac8b3`; (c) em `3a24c86`. |
 | 9 | Integração com o ecossistema TMW | ⏳ Não iniciado. **A referência também não tem código dessa etapa no repositório**: o último commit é a API. Acompanhe pela aula. |
 
 **Atenção ao implementar o `/predict` (8a):** não copie `float(predict)` da referência (`api_fiel.py:25`). Testei com o **NumPy 2.5.2** do seu `requirements.txt` e `float(np.array([0.5]))` levanta `TypeError: only 0-dimensional arrays can be converted to Python scalars`. Como o `except` genérico da referência engole o erro e devolve `{"erro": ...}, 400`, o endpoint **sempre falharia** no seu ambiente. Use `float(predict[0])` e, no `except`, logue o erro (`app.logger.exception(err)`) em vez de escondê-lo.
+
+> **Atualização:** ✅ aplicado em `32ac8b3`: a API usa `float(predict[0])` e loga o erro com `app.logger.exception`.
 
 ---
 
@@ -196,8 +249,8 @@ Avisos que **não** vêm do seu código e podem ser ignorados: `FutureWarning` d
 | R3 | `life_cycle.sql:50-51` | Usa `BETWEEN 15 AND 27` / `> 27`, o que contradiz o próprio comentário (linhas 6-7: "14 <= recência anterior <= 28" / "> 28") e a regra de `04-DESENCANTADA` (15-28). Quem volta depois de exatos 28 dias estava "Desencantada", mas é rotulado "Reborn". | ✅ O seu (`life_cycle.sql:44-45`, 15-28 / >28) está **correto**. Nos seus dados, 708 linhas têm intervalo de exatos 28 dias e você rotula corretamente como `02-Reconquistado`. |
 | R4 | `exec_query.py:66,69` | `--mode` é lido do argparse mas **não é repassado** para `exec_query()` e não tem default. O modo `replace` por data também manteria só a última data. | ✅ Corrigido: `--mode` é repassado, e o `replace` faz `DROP` uma vez e depois `append`. |
 | R5 | `Makefile:28-29, 38-39, 47-48` | `. .venv/bin/activate` sozinho numa linha de receita não vale para as linhas seguintes (cada linha roda em outro shell), então os scripts rodam com o Python do sistema. O `setup` (linha 21) roda `pipreqs --force`, que **sobrescreve o `requirements.txt` fixado** a cada setup. | ✅ Seu Makefile usa `$(PYTHON)` explícito e instala o `requirements.txt` fixado. |
-| R6 | `api_fiel.py:25,27-28` | `float(predict)` dá `TypeError` no NumPy 2.5.2, e o `except` genérico esconde o erro (seção 3). | ⏳ Ainda não implementado no seu; use `float(predict[0])`. |
-| R7 | `fs_education.sql:4`, `target.sql:11`, `train.py:54-59` | Mesmos problemas que I4, M1 e I2. | Ver I4, M1 e I2. |
+| R6 | `api_fiel.py:25,27-28` | `float(predict)` dá `TypeError` no NumPy 2.5.2, e o `except` genérico esconde o erro (seção 3). | ⏳ Ainda não implementado no seu; use `float(predict[0])`. **Atualização:** ✅ implementado em `32ac8b3`. |
+| R7 | `fs_education.sql:4`, `target.sql:11`, `train.py:54-59` | Mesmos problemas que I4, M1 e I2. | Ver I4, M1 e I2. **Atualização:** I4 ✅ em `3a24c86`; M1 e I2 no Lote 2. |
 
 ---
 
@@ -214,6 +267,8 @@ Avisos que **não** vêm do seu código e podem ser ignorados: `FutureWarning` d
 
 **Git:** há bastante trabalho não commitado: `Makefile`, `fs_all.sql`, `pipeline_analytics.py`, `predict_fiel.py`, `src/api/` e `src/engineering/` estão sem rastreamento, e `requirements.txt`, `exec_query.py` e `report_ciclo_vida.sql` estão modificados. A alteração no `report_ciclo_vida.sql` **corrige um bug** da versão commitada: `cluster` estava no `SELECT` sem estar no `GROUP BY`.
 
+> **Atualização (2026-11-10):** esse trabalho foi commitado em `dccb4a5`, no branch `paridade-referencia`. Depois disso, `s.sql`, `engineering/query.sql` e `import requests.py` foram removidos em `3a24c86` (que também adicionou `src/api/test_api.py`). Os arquivos soltos ignorados pelo git (`database.db` da raiz, `src/kaggle.json`, `model_fiel.pkl`, `data/loyalty-system/query.sql` e `*.session.sql`) foram para a Lixeira. O `LICENSE` GPL-3.0 entrou em `13c5a35`, então deixou de ser exclusivo da referência.
+
 ### A.2 `requirements.txt`
 
 | Pacote | Seu | Referência | Observação |
@@ -227,7 +282,7 @@ Avisos que **não** vêm do seu código e podem ser ignorados: `FutureWarning` d
 | feature-engine / matplotlib / python-dotenv / SQLAlchemy / tqdm | 1.9.4 / 3.11.1 / 1.2.4 / 2.0.52 / 4.70.1 | 1.9.3 / 3.10.7 / 1.1.1 / 2.0.44 / 4.67.1 | Diferenças minor ou patch. |
 | seaborn | 0.13.2 | 0.13.2 | Igual. |
 | mlflow_skinny, mlflow_tracing | — | 3.4.0 | Dependências transitivas do mlflow; não precisa listar. |
-| requests | — | — | Usado em `import requests.py`; hoje só vem como transitiva. Adicione se o cliente de teste continuar. |
+| requests | — | — | Usado em `import requests.py`; hoje só vem como transitiva. Adicione se o cliente de teste continuar. **Atualização:** fixado em 2.34.2 em `3a24c86`. |
 
 ### A.3 Makefile
 
@@ -253,23 +308,25 @@ Legenda: **=** equivalente; **≠ ok** implementado de forma diferente e correto
 | Arquivo | Classificação | Detalhe |
 |---|---|---|
 | `dau.sql` | ≠ ok | Mesma métrica; ordena por DAU decrescente em vez de por data. |
-| `mau.sql` | ≠ ok | Mesma janela de 28 dias (`<=` / `< 28`). Não tem a coluna `qtdeDias` da referência, útil para ver o período de aquecimento; tem `DESC LIMIT 100`. |
-| `life_cycle.sql` | ≠ ok | Rótulos em formato de título, usados de forma consistente; fronteira 28 **correta** (R3); `COALESCE` de frequência e cluster só afeta zumbis, que ficam fora da ABT; coluna extra `dtPrimTransacao`, inofensiva. Reproduz o salvo em 100%. |
-| `frequencia_valor.sql` | ≠ ✗ (leve) | Mesma lógica; rótulos divergentes e erro de digitação em `20s-POTENCIAL` (M13). |
-| `frequencia_valor.py` | ≠ ok | Usa `Path(__file__)` (mais robusto); não plota o KMeans (M13). |
+| `mau.sql` | ≠ ok | Mesma janela de 28 dias (`<=` / `< 28`). Não tem a coluna `qtdeDias` da referência, útil para ver o período de aquecimento; tem `DESC LIMIT 100`. **Atualização:** `qtdeDias` adicionada em `32ac8b3`. |
+| `life_cycle.sql` | ≠ ok | Rótulos em formato de título, usados de forma consistente; fronteira 28 **correta** (R3); `COALESCE` de frequência e cluster só afeta zumbis, que ficam fora da ABT; coluna extra `dtPrimTransacao`, inofensiva. Reproduz o salvo em 100%. **Atualização:** comentário com as regras no topo em `13c5a35`. |
+| `frequencia_valor.sql` | ≠ ✗ (leve) | Mesma lógica; rótulos divergentes e erro de digitação em `20s-POTENCIAL` (M13). **Atualização:** ainda pendente (M13). |
+| `frequencia_valor.py` | ≠ ok | Usa `Path(__file__)` (mais robusto); não plota o KMeans (M13). **Atualização:** gráfico do KMeans em `32ac8b3`. |
 | `fs_transacional.sql` | ≠ ok | Lógica idêntica (janelas, `DISTINCT`, `LEFT JOIN`s); só nomes diferentes (`qtdeTransacoesVida`, `qtdTransacaoManha/Tarde/Noite`, `qtdeTransacaoDia*`), consistentes no seu pipeline. |
-| `fs_education.sql` | = (com o bug da referência) | Lógica idêntica, incluindo o `COUNT` sem `DISTINCT` (I4); nome `qtdDiasUltimaAtividade`. |
+| `fs_education.sql` | = (com o bug da referência) | Lógica idêntica, incluindo o `COUNT` sem `DISTINCT` (I4); nome `qtdDiasUltimaAtividade`. **Atualização:** `DISTINCT` em `3a24c86`. |
 | `fs_life_cycle.sql` | ≠ ok | Idêntico; `NULLIF` no `ratioFreqGrupo` é equivalente (no SQLite, divisão por zero já dá `NULL`). |
 | `fs_all.sql` | = | Idêntico, com os seus nomes de coluna. |
 | `target.sql` | ≠ ok | Idêntico; você nomeia `descLifeCycleAtual`/`D28` dentro da CTE (a referência deixa duas colunas com o mesmo nome). |
 | `report_ciclo_vida.sql` | = | Igual à referência, já com a correção do `cluster`. |
-| `exec_query.py` | ≠ ok (melhor) | Corrige R4; sobra de teste na linha 28 (M7). |
-| `pipeline_analytics.py` | = | Idêntico (e com a mesma fragilidade, I1). |
-| `train.py` | ≠ ok | RandomForest com grid (`n_estimators` × `min_samples_leaf`) em vez de AdaBoost (`n_estimators` × `learning_rate`), válido. Corrige R1 e R2. Sem baseline (M9). Split por linha (I2), igual à referência. |
-| `predict_fiel.py` | = | Idêntico (só a URI). |
-| `api_fiel.py` | ⏳ | `/health_check` OK; `/predict` é esboço; `/predict_many` não existe. |
-| `get_data.py` | ≠ ok | `.env` em `src/`; usa `path=` em vez de `shutil.move`, compatível com o `kaggle 2.2.5` (M10). |
+| `exec_query.py` | ≠ ok (melhor) | Corrige R4; sobra de teste na linha 28 (M7). **Atualização:** M7 em `3a24c86`. |
+| `pipeline_analytics.py` | = | Idêntico (e com a mesma fragilidade, I1). **Atualização:** I1 resolvido em `3a24c86`: retoma do último `dtRef`. |
+| `train.py` | ≠ ok | RandomForest com grid (`n_estimators` × `min_samples_leaf`) em vez de AdaBoost (`n_estimators` × `learning_rate`), válido. Corrige R1 e R2. Sem baseline (M9). Split por linha (I2), igual à referência. **Atualização:** baseline em `32ac8b3`; M3 e M8 em `3a24c86`; I2 e M2 no Lote 2. |
+| `predict_fiel.py` | = | Idêntico (só a URI). **Atualização:** URI via `MLFLOW_TRACKING_URI` em `3a24c86`. |
+| `api_fiel.py` | ⏳ | `/health_check` OK; `/predict` é esboço; `/predict_many` não existe. **Atualização:** ✅ `/predict` e `/predict_many` em `32ac8b3`. |
+| `get_data.py` | ≠ ok | `.env` em `src/`; usa `path=` em vez de `shutil.move`, compatível com o `kaggle 2.2.5` (M10). **Atualização:** `unzip=True` em `3a24c86`. |
 
 ---
 
 *Para refazer esta auditoria: a cópia usada na execução está em `/private/tmp/claude-501/-Users-vitorfernandes-Documents-mesa-loyalty-predict-main-vitor/085fb566-ae60-4336-9d77-7100ecd29e54/scratchpad/run` e os scripts de checagem estão em `/private/tmp/claude-501/-Users-vitorfernandes-Documents-mesa-loyalty-predict-main-vitor/085fb566-ae60-4336-9d77-7100ecd29e54/scratchpad/`. Os dois podem ser apagados.*
+
+*Atualização (2026-11-10): essas cópias ficam numa pasta temporária e podem não existir mais.*

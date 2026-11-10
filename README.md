@@ -117,6 +117,12 @@ python predict.py
 └── README.md
 ```
 
+## Créditos
+
+Este projeto foi construído acompanhando as aulas ao vivo do **Loyalty Predict**, do [Téo Me Why](https://github.com/TeoMeWhy). O projeto original, que serviu de referência para o pipeline, as regras de ciclo de vida e o modelo, está em [github.com/TeoMeWhy/loyalty-predict](https://github.com/TeoMeWhy/loyalty-predict).
+
+Assim como o original, este repositório é distribuído sob a licença [GPL-3.0](LICENSE).
+
 ## Autor
 
 **Vitor Fernandes** · [GitHub](https://github.com/vitorrrfernandes)

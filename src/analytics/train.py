@@ -40,14 +40,18 @@ df_train_test = df[df["dtRef"] < df["dtRef"].max()].reset_index(drop=True)
 
 X = df_train_test[features]
 y = df_train_test[target]
+groups = df_train_test["IdCliente"]
 
-X_train, X_test, y_train, y_test = model_selection.train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y,
-)
+# separa por cliente: a ABT tem até 2 datas por cliente, e o mesmo cliente
+# no treino e no teste deixaria a métrica de teste otimista
+gss = model_selection.GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+idx_train, idx_test = next(gss.split(X, y, groups=groups))
+
+X_train, X_test = X.iloc[idx_train], X.iloc[idx_test]
+y_train, y_test = y.iloc[idx_train], y.iloc[idx_test]
+groups_train = groups.iloc[idx_train]
+
+print(f"Clientes em comum entre treino e teste: {len(set(groups_train) & set(groups.iloc[idx_test]))}")
 
 print(f"Base Treino: {y_train.shape[0]} Unid. | Tx.target{100 * y_train.mean():.2f}%")
 print(f"Base Test: {y_test.shape[0]} Unid. | Tx.target{100 * y_test.mean():.2f}%")
@@ -75,13 +79,10 @@ bivariada["ratio"] = (bivariada[1] + 0.001) / (bivariada[0] + 0.001)
 # remove as features com a mesma mediana nas duas classes
 to_remove = bivariada[bivariada["ratio"] == 1].index.tolist()
 
-for i in to_remove:
-    features.remove(i)
-    num_features.remove(i)
+# não altera as listas originais: a célula pode ser rodada de novo sem mudar o resultado
+num_features_ok = [c for c in num_features if c not in to_remove]
 
-bivariada = df_train.groupby(target)[num_features].median().T
-bivariada["ratio"] = (bivariada[1] + 0.001) / (bivariada[0] + 0.001)
-bivariada.sort_values(by="ratio", ascending=False)
+bivariada.loc[num_features_ok].sort_values(by="ratio", ascending=False)
 
 # %%
 
@@ -114,13 +115,15 @@ imput_new = imputation.CategoricalImputer(
     variables=["descLifeCycleD28"],
 )
 
+# mesma ideia: imputa só as que não foram removidas no DROP
+fill_1000 = [
+    c for c in ["avgIntervaloDiasVida", "avgIntervaloDiasD28", "qtdDiasUltimaAtividade"]
+    if c not in to_remove
+]
+
 imput_1000 = imputation.ArbitraryNumberImputer(
     arbitrary_number=1000,
-    variables=[
-        "avgIntervaloDiasVida",
-        "avgIntervaloDiasD28",
-        "qtdDiasUltimaAtividade",
-    ],
+    variables=fill_1000,
 )
 
 # %%
@@ -145,7 +148,8 @@ params = {
 grid = model_selection.GridSearchCV(
             model,
             param_grid=params,
-            cv=3,
+            # CV também por cliente, pelo mesmo motivo do split de teste
+            cv=model_selection.StratifiedGroupKFold(n_splits=3, shuffle=True, random_state=42),
             scoring="roc_auc",
             refit=True,  
             verbose=3,
@@ -170,7 +174,7 @@ with mlflow.start_run() as r:
                 ("Algoritmo", grid),
             ]
         )
-    model_pipeline.fit(X_train, y_train)
+    model_pipeline.fit(X_train, y_train, Algoritmo__groups=groups_train)
 
     # ASSESS - Treino
     y_pred_train = model_pipeline.predict(X_train)
@@ -193,7 +197,7 @@ with mlflow.start_run() as r:
     print("AUC Teste:", auc_test)
 
     # ASSESS - OOT
-    # usa as mesmas colunas do treino (features perdeu as colunas de to_remove)
+    # usa as mesmas colunas do treino
     X_oot = df_oot[X_train.columns]
     y_oot = df_oot[target]
 
@@ -252,6 +256,9 @@ with mlflow.start_run() as r:
     plt.savefig("curva_roc.png")
 
     mlflow.log_artifact("curva_roc.png")
+
+    # o id do run serve para registrar o modelo (interface do MLflow ou mlflow.register_model)
+    print(f"Run do MLflow: {r.info.run_id}")
 
 # %%
 # ASSESS - FEATURE IMPORTANCE
